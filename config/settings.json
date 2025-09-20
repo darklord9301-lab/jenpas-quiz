@@ -69,6 +69,6 @@
   "submission": {
     "method": "email",                  // "email" for now
     "recipientEmail": "naskaraditya19@gmail.com",
-    "subjectLine": "JENPAS UG Mock Test - Day 1"
+    "subjectLine": "JENPAS UG Mock Test - Day 0"
   }
 }
