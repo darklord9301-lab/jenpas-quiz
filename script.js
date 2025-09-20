@@ -94,8 +94,8 @@ function renderHeader() {
 function renderExamDetails() {
     // Format date for better display
     const formattedDate = formatExamDate(examConfig.examDate);
-    const durationHours = Math.floor(examConfig.examDuration / 60);
-    const durationMinutes = examConfig.examDuration % 60;
+    const durationHours = Math.floor(examConfig.examDuration / 3600);
+    const durationMinutes = examConfig.examDuration % 3600;
     const durationText = durationHours > 0 
         ? `${durationHours}h ${durationMinutes}m` 
         : `${durationMinutes} minutes`;
