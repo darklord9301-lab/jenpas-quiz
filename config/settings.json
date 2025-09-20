@@ -1,14 +1,14 @@
 {
   "examTitle": "JENPAS UG Mock Test - Daily Practice (Day 0)",
   "examDate": "2025-10-18",
-  "examDuration": 7200,                 // in seconds → 2 hours
-  "autoSubmit": true,                   // whether to auto-submit after timer ends
-  "maxReloads": 2,                      // maximum allowed reloads/tab-switches
-  "graceTime": 120,                     // extra seconds if network glitch occurs
-  "showResultsImmediately": false,      // control visibility of results
-  "allowReview": true,                  // can mark questions for review
-  "questionOrder": "sequential",        // sequential / random
-  "optionsPerQuestion": 4,              // default MCQ options
+  "examDuration": 7200,                 
+  "autoSubmit": true,                   
+  "maxReloads": 2,                      
+  "graceTime": 120,                     
+  "showResultsImmediately": false,      
+  "allowReview": true,                  
+  "questionOrder": "sequential",       
+  "optionsPerQuestion": 4,             
 
   "pattern": {
     "totalQuestions": 111,
@@ -60,15 +60,14 @@
   },
 
   "theme": {
-    "primaryColor": "#2c3e50",          // header/timer color
-    "attemptedColor": "#2ecc71",        // green → attempted
-    "unattemptedColor": "#e74c3c",      // red → unattempted
-    "reviewColor": "#f39c12"            // orange → marked for review
+    "primaryColor": "#2c3e50",          
+    "attemptedColor": "#2ecc71",       
+    "unattemptedColor": "#e74c3c",      
+    "reviewColor": "#f39c12"            
   },
 
   "submission": {
-    "method": "email",                  // "email" for now
-    "recipientEmail": "naskaraditya19@gmail.com",
+    "method": "email",                  
     "subjectLine": "JENPAS UG Mock Test - Day 0"
   }
 }
