@@ -164,8 +164,8 @@ function renderSectionBreakdown() {
                         <thead>
                             <tr class="table-header">
                                 <th>Section</th>
-                                <th>Category I Questions</th>
-                                <th>Category II Questions</th>
+                                <th>Category I </th>
+                                <th>Category II </th>
                                 <th>Total Marks</th>
                             </tr>
                         </thead>
