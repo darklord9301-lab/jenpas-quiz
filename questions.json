@@ -8,9 +8,7 @@
       "options": ["Newton", "Joule", "Pascal", "Watt"],
       "correctOption": 0,
       "marks": 1,
-      "negativeMarks": -0.25,
-      "timeAllocated": 50,           // in seconds
-      "reviewable": true
+      "negativeMarks": -0.25
     },
     {
       "id": 2,
