@@ -1,7 +1,6 @@
 /**
  * JENPAS UG Mock Test Portal - Main JavaScript File
  * Dynamically loads exam configuration and manages the complete exam flow
- * Author: AI Frontend Developer
  * Version: 1.0
  */
 
