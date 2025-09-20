@@ -1,1 +1,67 @@
+{
+  "questions": [
+    {
+      "id": 1,
+      "section": "Physics",
+      "category": "I",
+      "questionText": "What is the SI unit of force?",
+      "options": ["Newton", "Joule", "Pascal", "Watt"],
+      "correctOption": 0,
+      "marks": 1,
+      "negativeMarks": -0.25,
+      "timeAllocated": 50,           // in seconds
+      "reviewable": true
+    },
+    {
+      "id": 2,
+      "section": "Physics",
+      "category": "II",
+      "questionText": "A block of mass 2 kg is on a frictionless surface. If a force of 10 N acts on it for 3 s, what is its final velocity?",
+      "options": ["15 m/s", "12 m/s", "10 m/s", "20 m/s"],
+      "correctOption": 1,
+      "marks": 2,
+      "negativeMarks": 0
+    },
+    {
+      "id": 3,
+      "section": "Chemistry",
+      "category": "I",
+      "questionText": "Which of the following is an alkali metal?",
+      "options": ["Calcium", "Potassium", "Magnesium", "Aluminum"],
+      "correctOption": 1,
+      "marks": 1,
+      "negativeMarks": -0.25
+    },
+    {
+      "id": 4,
+      "section": "Biology",
+      "category": "II",
+      "questionText": "In human blood, which type of cell is responsible for clotting?",
+      "options": ["RBC", "WBC", "Platelets", "Plasma"],
+      "correctOption": 2,
+      "marks": 2,
+      "negativeMarks": 0
+    },
+    {
+      "id": 5,
+      "section": "Basic English",
+      "category": "I",
+      "questionText": "Choose the correct synonym of 'Happy':",
+      "options": ["Sad", "Elated", "Angry", "Tired"],
+      "correctOption": 1,
+      "marks": 1,
+      "negativeMarks": -0.25
+    },
+    {
+      "id": 6,
+      "section": "Logical Reasoning",
+      "category": "I",
+      "questionText": "Find the next number in the series: 2, 4, 8, 16, ?",
+      "options": ["18", "24", "32", "20"],
+      "correctOption": 2,
+      "marks": 1,
+      "negativeMarks": -0.25
+    }
+  ]
+}
 
