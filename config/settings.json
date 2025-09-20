@@ -11,26 +11,26 @@
   "optionsPerQuestion": 4,              // default MCQ options
 
   "pattern": {
-    "totalQuestions": 100,
-    "totalMarks": 115,
+    "totalQuestions": 111,
+    "totalMarks": 137,
     "sections": [
       {
         "name": "Physics",
         "categoryI": 15,
-        "categoryII": 5,
-        "marks": 25
+        "categoryII": 8,
+        "marks": 31
       },
       {
         "name": "Chemistry",
         "categoryI": 15,
-        "categoryII": 5,
-        "marks": 25
+        "categoryII": 8,
+        "marks": 31
       },
       {
         "name": "Biology",
         "categoryI": 15,
-        "categoryII": 5,
-        "marks": 25
+        "categoryII": 10,
+        "marks": 35
       },
       {
         "name": "Basic English",
