@@ -82,7 +82,7 @@ function renderHeader() {
         <header class="exam-header">
             <div class="header-content">
                 <h1 class="exam-title" id="examTitle">${examConfig.examTitle}</h1>
-                <div class="exam-subtitle">Online Examination Portal</div>
+                <div class="exam-subtitle">Built with love, exclusively for my Urmi!</div>
             </div>
         </header>
     `;
