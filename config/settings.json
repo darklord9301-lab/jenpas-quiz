@@ -1,5 +1,5 @@
 {
-  "examTitle": "JENPAS UG Mock Test - Daily Practice",
+  "examTitle": "JENPAS UG Mock Test - Daily Practice (Day 0)",
   "examDate": "2025-10-18",
   "examDuration": 7200,                 // in seconds → 2 hours
   "autoSubmit": true,                   // whether to auto-submit after timer ends
