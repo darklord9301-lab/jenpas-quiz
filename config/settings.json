@@ -1,24 +1,74 @@
 {
   "examTitle": "JENPAS UG Mock Test - Daily Practice",
   "examDate": "2025-10-18",
-  "examDuration": 7200,              // in seconds → 2 hours
-  "autoSubmit": true,                // whether to auto-submit after timer ends
-  "maxReloads": 2,                   // maximum allowed reloads/tab-switches
-  "graceTime": 120,                  // extra seconds added if internet glitch occurs
-  "showResultsImmediately": false,   // results visible instantly or later (your control)
-  "allowReview": true,               // can mark questions for review
-  "questionOrder": "sequential",     // or "random" if you want shuffle
-  "optionsPerQuestion": 4,           // mostly fixed at 4 for MCQ
-  "theme": {
-    "primaryColor": "#2c3e50",       // header/timer color
-    "attemptedColor": "#2ecc71",     // green → attempted
-    "unattemptedColor": "#e74c3c",   // red → unattempted
-    "reviewColor": "#f39c12"         // orange → marked for review
+  "examDuration": 7200,                 // in seconds → 2 hours
+  "autoSubmit": true,                   // whether to auto-submit after timer ends
+  "maxReloads": 2,                      // maximum allowed reloads/tab-switches
+  "graceTime": 120,                     // extra seconds if network glitch occurs
+  "showResultsImmediately": false,      // control visibility of results
+  "allowReview": true,                  // can mark questions for review
+  "questionOrder": "sequential",        // sequential / random
+  "optionsPerQuestion": 4,              // default MCQ options
+
+  "pattern": {
+    "totalQuestions": 100,
+    "totalMarks": 115,
+    "sections": [
+      {
+        "name": "Physics",
+        "categoryI": 15,
+        "categoryII": 5,
+        "marks": 25
+      },
+      {
+        "name": "Chemistry",
+        "categoryI": 15,
+        "categoryII": 5,
+        "marks": 25
+      },
+      {
+        "name": "Biology",
+        "categoryI": 15,
+        "categoryII": 5,
+        "marks": 25
+      },
+      {
+        "name": "Basic English",
+        "categoryI": 20,
+        "categoryII": 0,
+        "marks": 20
+      },
+      {
+        "name": "Logical Reasoning",
+        "categoryI": 20,
+        "categoryII": 0,
+        "marks": 20
+      }
+    ],
+    "markingScheme": {
+      "categoryI": {
+        "correct": 1,
+        "wrong": -0.25,
+        "unanswered": 0
+      },
+      "categoryII": {
+        "correct": 2,
+        "wrong": 0,
+        "unanswered": 0
+      }
+    }
   },
+
+  "theme": {
+    "primaryColor": "#2c3e50",          // header/timer color
+    "attemptedColor": "#2ecc71",        // green → attempted
+    "unattemptedColor": "#e74c3c",      // red → unattempted
+    "reviewColor": "#f39c12"            // orange → marked for review
+  },
+
   "submission": {
-    "method": "email",               // "email" for now, future could be "server"
+    "method": "email",                  // "email" for now
     "recipientEmail": "naskaraditya19@gmail.com",
     "subjectLine": "JENPAS UG Mock Test - Day 1"
   }
 }
-
