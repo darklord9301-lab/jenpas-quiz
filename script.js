@@ -263,6 +263,51 @@ function renderActionButtons() {
 }
 
 /**
+ * Creates section-wise question mapping for organized display
+ */
+function createSectionMapping() {
+    const sectionMapping = new Map();
+    let questionIndex = 0;
+    
+    examConfig.pattern.sections.forEach(section => {
+        const sectionQuestions = {
+            name: section.name,
+            categoryI: [],
+            categoryII: [],
+            totalQuestions: (section.categoryI || 0) + (section.categoryII || 0)
+        };
+        
+        // Add Category I questions
+        for (let i = 0; i < (section.categoryI || 0); i++) {
+            if (questionIndex < questions.length) {
+                sectionQuestions.categoryI.push({
+                    question: questions[questionIndex],
+                    globalIndex: questionIndex,
+                    localIndex: i + 1
+                });
+                questionIndex++;
+            }
+        }
+        
+        // Add Category II questions
+        for (let i = 0; i < (section.categoryII || 0); i++) {
+            if (questionIndex < questions.length) {
+                sectionQuestions.categoryII.push({
+                    question: questions[questionIndex],
+                    globalIndex: questionIndex,
+                    localIndex: i + 1
+                });
+                questionIndex++;
+            }
+        }
+        
+        sectionMapping.set(section.name, sectionQuestions);
+    });
+    
+    return sectionMapping;
+}
+
+/**
  * Renders the complete exam interface
  */
 function renderExamInterface() {
@@ -290,16 +335,25 @@ function renderExamInterface() {
 }
 
 /**
- * Renders the exam header with timer
+ * Renders the exam header with timer and progress
  */
 function renderExamHeader() {
+    const attemptedCount = examLog.responses.filter(r => r.selectedOption !== null).length;
+    const reviewCount = examLog.responses.filter(r => r.markedForReview).length;
+    
     return `
         <header class="exam-header-bar">
             <div class="exam-header-content">
-                <h2 class="exam-title-small">${examConfig.examTitle}</h2>
+                <div class="header-left">
+                    <h2 class="exam-title-small">${examConfig.examTitle}</h2>
+                    <div class="exam-progress">
+                        <span class="progress-text">${attemptedCount}/${questions.length} Attempted</span>
+                        ${reviewCount > 0 ? `<span class="review-count">${reviewCount} Marked</span>` : ''}
+                    </div>
+                </div>
                 <div class="timer-container">
-                    <span class="timer-label">Time Remaining:</span>
-                    <span class="timer" id="examTimer">00:00:00</span>
+                    <div class="timer-label">Time Remaining</div>
+                    <div class="timer" id="examTimer">00:00:00</div>
                 </div>
             </div>
         </header>
@@ -307,34 +361,71 @@ function renderExamHeader() {
 }
 
 /**
- * Renders the question palette sidebar
+ * Renders the enhanced question palette with sections
  */
 function renderQuestionPalette() {
-    const paletteItems = questions.map((q, index) => {
-        const response = examLog.responses.find(r => r.questionId === q.id);
-        let status = 'unattempted';
+    const sectionMapping = createSectionMapping();
+    let sectionHTML = '';
+    
+    sectionMapping.forEach((sectionData, sectionName) => {
+        const sectionConfig = examConfig.pattern.sections.find(s => s.name === sectionName);
         
-        if (response) {
-            if (response.markedForReview) {
-                status = 'review';
-            } else if (response.selectedOption !== null) {
-                status = 'attempted';
-            }
-        }
-        
-        return `
-            <button class="palette-item ${status} ${index === currentQuestionIndex ? 'current' : ''}" 
-                    onclick="navigateToQuestion(${index})" 
-                    data-question-id="${q.id}">
-                ${index + 1}
-            </button>
+        sectionHTML += `
+            <div class="palette-section">
+                <div class="section-header" onclick="toggleSection('${sectionName}')">
+                    <h4 class="section-name">${sectionName}</h4>
+                    <div class="section-info">
+                        <span class="question-count">${sectionData.totalQuestions} Questions</span>
+                        <span class="section-marks">${sectionConfig.marks} Marks</span>
+                    </div>
+                    <span class="section-toggle" data-section="${sectionName}">−</span>
+                </div>
+                <div class="section-content" data-section="${sectionName}">
+                    ${sectionData.categoryI.length > 0 ? `
+                        <div class="category-group">
+                            <div class="category-header">
+                                <span class="category-label">Category I</span>
+                                <span class="category-marks">+${examConfig.pattern.markingScheme.categoryI.correct}, ${examConfig.pattern.markingScheme.categoryI.wrong}</span>
+                            </div>
+                            <div class="palette-grid">
+                                ${sectionData.categoryI.map(item => renderPaletteItem(item)).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    ${sectionData.categoryII.length > 0 ? `
+                        <div class="category-group">
+                            <div class="category-header">
+                                <span class="category-label">Category II</span>
+                                <span class="category-marks">+${examConfig.pattern.markingScheme.categoryII.correct}, ${examConfig.pattern.markingScheme.categoryII.wrong}</span>
+                            </div>
+                            <div class="palette-grid">
+                                ${sectionData.categoryII.map(item => renderPaletteItem(item)).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
         `;
-    }).join('');
+    });
     
     return `
         <div class="question-palette">
             <div class="palette-header">
                 <h3>Question Palette</h3>
+                <div class="palette-stats">
+                    <div class="stat-item">
+                        <span class="stat-count" id="attemptedStat">0</span>
+                        <span class="stat-label">Attempted</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count" id="reviewStat">0</span>
+                        <span class="stat-label">Review</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-count" id="unattemptedStat">${questions.length}</span>
+                        <span class="stat-label">Remaining</span>
+                    </div>
+                </div>
                 <div class="legend">
                     <div class="legend-item">
                         <span class="legend-color attempted"></span>
@@ -348,13 +439,56 @@ function renderQuestionPalette() {
                         <span class="legend-color review"></span>
                         <span>Review</span>
                     </div>
+                    <div class="legend-item">
+                        <span class="legend-color current"></span>
+                        <span>Current</span>
+                    </div>
                 </div>
             </div>
-            <div class="palette-grid">
-                ${paletteItems}
+            <div class="palette-sections">
+                ${sectionHTML}
             </div>
         </div>
     `;
+}
+
+/**
+ * Renders individual palette item
+ */
+function renderPaletteItem(item) {
+    const response = examLog.responses.find(r => r.questionId === item.question.id);
+    let status = 'unattempted';
+    
+    if (response) {
+        if (response.markedForReview) {
+            status = 'review';
+        } else if (response.selectedOption !== null) {
+            status = 'attempted';
+        }
+    }
+    
+    return `
+        <button class="palette-item ${status} ${item.globalIndex === currentQuestionIndex ? 'current' : ''}" 
+                onclick="navigateToQuestion(${item.globalIndex})" 
+                data-question-id="${item.question.id}"
+                title="Question ${item.globalIndex + 1}: ${item.question.section} - Category ${item.question.category}">
+            ${item.globalIndex + 1}
+        </button>
+    `;
+}
+
+/**
+ * Toggles section visibility in palette
+ */
+function toggleSection(sectionName) {
+    const content = document.querySelector(`.section-content[data-section="${sectionName}"]`);
+    const toggle = document.querySelector(`.section-toggle[data-section="${sectionName}"]`);
+    
+    if (content && toggle) {
+        const isCollapsed = content.style.display === 'none';
+        content.style.display = isCollapsed ? 'block' : 'none';
+        toggle.textContent = isCollapsed ? '−' : '+';
+    }
 }
 
 /**
@@ -367,29 +501,37 @@ function renderQuestionPanel() {
                 <!-- Question will be rendered here -->
             </div>
             <div class="question-controls">
-                <button class="btn-secondary" onclick="previousQuestion()" id="prevBtn">
-                    <span class="btn-icon">←</span>
-                    Previous
-                </button>
-                <button class="btn-outline" onclick="toggleReview()" id="reviewBtn">
-                    <span class="btn-icon">🔖</span>
-                    Mark for Review
-                </button>
-                <button class="btn-secondary" onclick="nextQuestion()" id="nextBtn">
-                    Next
-                    <span class="btn-icon">→</span>
-                </button>
-                <button class="btn-primary submit-btn" onclick="submitExam()">
-                    <span class="btn-icon">📤</span>
-                    Submit Exam
-                </button>
+                <div class="nav-controls">
+                    <button class="btn-secondary" onclick="previousQuestion()" id="prevBtn">
+                        <span class="btn-icon">←</span>
+                        Previous
+                    </button>
+                    <button class="btn-secondary" onclick="nextQuestion()" id="nextBtn">
+                        Next
+                        <span class="btn-icon">→</span>
+                    </button>
+                </div>
+                <div class="action-controls">
+                    <button class="btn-outline" onclick="clearResponse()" id="clearBtn">
+                        <span class="btn-icon">✕</span>
+                        Clear Response
+                    </button>
+                    <button class="btn-outline" onclick="toggleReview()" id="reviewBtn">
+                        <span class="btn-icon">🔖</span>
+                        Mark for Review
+                    </button>
+                    <button class="btn-primary submit-btn" onclick="submitExam()">
+                        <span class="btn-icon">📤</span>
+                        Submit Exam
+                    </button>
+                </div>
             </div>
         </div>
     `;
 }
 
 /**
- * Renders a specific question
+ * Renders a specific question with enhanced styling
  */
 function renderQuestion(index) {
     if (index < 0 || index >= questions.length) return;
@@ -404,9 +546,16 @@ function renderQuestion(index) {
     const questionHTML = `
         <div class="question-header">
             <div class="question-meta">
-                <span class="question-number">Question ${index + 1} of ${questions.length}</span>
-                <span class="question-section">${question.section} - Category ${question.category}</span>
-                <span class="question-marks">Marks: ${question.marks} | Negative: ${question.negativeMarks}</span>
+                <div class="meta-primary">
+                    <span class="question-number">Question ${index + 1} of ${questions.length}</span>
+                    <span class="question-section">${question.section}</span>
+                    <span class="question-category">Category ${question.category}</span>
+                </div>
+                <div class="meta-secondary">
+                    <span class="question-marks">Marks: +${question.marks}</span>
+                    <span class="negative-marks">Negative: ${question.negativeMarks}</span>
+                    <span class="question-type">${question.type || 'Multiple Choice'}</span>
+                </div>
             </div>
         </div>
         
@@ -416,12 +565,16 @@ function renderQuestion(index) {
         
         <div class="options-container">
             ${question.options.map((option, optIndex) => `
-                <label class="option-label">
-                    <input type="radio" 
-                           name="question_${question.id}" 
-                           value="${optIndex}"
-                           ${response?.selectedOption === optIndex ? 'checked' : ''}
-                           onchange="selectOption(${question.id}, ${optIndex})">
+                <label class="option-label ${response?.selectedOption === optIndex ? 'selected' : ''}" 
+                       data-option="${optIndex}">
+                    <div class="option-selector">
+                        <input type="radio" 
+                               name="question_${question.id}" 
+                               value="${optIndex}"
+                               ${response?.selectedOption === optIndex ? 'checked' : ''}
+                               onchange="selectOption(${question.id}, ${optIndex})">
+                        <span class="option-marker">${String.fromCharCode(65 + optIndex)}</span>
+                    </div>
                     <span class="option-text">${option}</span>
                 </label>
             `).join('')}
@@ -436,6 +589,9 @@ function renderQuestion(index) {
     // Update button states
     updateControlButtons();
     
+    // Update header stats
+    updateHeaderStats();
+    
     // Render MathJax if available
     if (window.MathJax) {
         MathJax.typesetPromise([document.getElementById('questionContent')]);
@@ -443,7 +599,7 @@ function renderQuestion(index) {
 }
 
 /**
- * Updates the question palette colors
+ * Updates the question palette colors and states
  */
 function updateQuestionPalette() {
     questions.forEach((q, index) => {
@@ -469,27 +625,68 @@ function updateQuestionPalette() {
 }
 
 /**
+ * Updates header statistics
+ */
+function updateHeaderStats() {
+    const attemptedCount = examLog.responses.filter(r => r.selectedOption !== null).length;
+    const reviewCount = examLog.responses.filter(r => r.markedForReview).length;
+    const unattemptedCount = questions.length - attemptedCount;
+    
+    const attemptedStat = document.getElementById('attemptedStat');
+    const reviewStat = document.getElementById('reviewStat');
+    const unattemptedStat = document.getElementById('unattemptedStat');
+    
+    if (attemptedStat) attemptedStat.textContent = attemptedCount;
+    if (reviewStat) reviewStat.textContent = reviewCount;
+    if (unattemptedStat) unattemptedStat.textContent = unattemptedCount;
+    
+    // Update progress in header
+    const progressText = document.querySelector('.progress-text');
+    if (progressText) {
+        progressText.textContent = `${attemptedCount}/${questions.length} Attempted`;
+    }
+    
+    const reviewCountEl = document.querySelector('.review-count');
+    if (reviewCount > 0) {
+        if (reviewCountEl) {
+            reviewCountEl.textContent = `${reviewCount} Marked`;
+            reviewCountEl.style.display = 'inline';
+        }
+    } else if (reviewCountEl) {
+        reviewCountEl.style.display = 'none';
+    }
+}
+
+/**
  * Updates control button states
  */
 function updateControlButtons() {
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const reviewBtn = document.getElementById('reviewBtn');
+    const clearBtn = document.getElementById('clearBtn');
     
     // Previous button
-    prevBtn.disabled = currentQuestionIndex === 0;
+    if (prevBtn) prevBtn.disabled = currentQuestionIndex === 0;
     
-    // Next button
-    nextBtn.disabled = currentQuestionIndex === questions.length - 1;
+    // Next button  
+    if (nextBtn) nextBtn.disabled = currentQuestionIndex === questions.length - 1;
     
     // Review button
     const response = examLog.responses.find(r => r.questionId === questions[currentQuestionIndex].id);
-    if (response?.markedForReview) {
-        reviewBtn.innerHTML = '<span class="btn-icon">🔖</span> Remove Review';
-        reviewBtn.classList.add('marked');
-    } else {
-        reviewBtn.innerHTML = '<span class="btn-icon">🔖</span> Mark for Review';
-        reviewBtn.classList.remove('marked');
+    if (reviewBtn) {
+        if (response?.markedForReview) {
+            reviewBtn.innerHTML = '<span class="btn-icon">🔖</span> Remove Review';
+            reviewBtn.classList.add('marked');
+        } else {
+            reviewBtn.innerHTML = '<span class="btn-icon">🔖</span> Mark for Review';
+            reviewBtn.classList.remove('marked');
+        }
+    }
+    
+    // Clear button
+    if (clearBtn) {
+        clearBtn.disabled = response?.selectedOption === null;
     }
 }
 
@@ -577,12 +774,74 @@ function nextQuestion() {
 }
 
 /**
- * Handles option selection
+ * Handles option selection with toggle functionality
  */
 function selectOption(questionId, optionIndex) {
-    updateLog(questionId, 'answered', optionIndex);
+    const response = examLog.responses.find(r => r.questionId === questionId);
+    
+    // Toggle functionality - if clicking the same option, deselect it
+    if (response && response.selectedOption === optionIndex) {
+        updateLog(questionId, 'deselected', null);
+        response.selectedOption = null;
+        
+        // Update radio button
+        const radioButton = document.querySelector(`input[name="question_${questionId}"][value="${optionIndex}"]`);
+        if (radioButton) {
+            radioButton.checked = false;
+        }
+        
+        // Remove selected class from option
+        const optionLabel = document.querySelector(`.option-label[data-option="${optionIndex}"]`);
+        if (optionLabel) {
+            optionLabel.classList.remove('selected');
+        }
+    } else {
+        updateLog(questionId, 'answered', optionIndex);
+        
+        // Remove selected class from all options first
+        document.querySelectorAll('.option-label').forEach(label => {
+            label.classList.remove('selected');
+        });
+        
+        // Add selected class to current option
+        const optionLabel = document.querySelector(`.option-label[data-option="${optionIndex}"]`);
+        if (optionLabel) {
+            optionLabel.classList.add('selected');
+        }
+    }
+    
     updateQuestionPalette();
-    console.log(`Selected option ${optionIndex} for question ${questionId}`);
+    updateControlButtons();
+    updateHeaderStats();
+    console.log(`Option ${optionIndex} toggled for question ${questionId}`);
+}
+
+/**
+ * Clears the current response
+ */
+function clearResponse() {
+    const questionId = questions[currentQuestionIndex].id;
+    const response = examLog.responses.find(r => r.questionId === questionId);
+    
+    if (response && response.selectedOption !== null) {
+        updateLog(questionId, 'cleared', null);
+        response.selectedOption = null;
+        
+        // Clear radio buttons
+        const radioButtons = document.querySelectorAll(`input[name="question_${questionId}"]`);
+        radioButtons.forEach(radio => {
+            radio.checked = false;
+        });
+        
+        // Remove selected class from all options
+        document.querySelectorAll('.option-label').forEach(label => {
+            label.classList.remove('selected');
+        });
+        
+        updateQuestionPalette();
+        updateControlButtons();
+        updateHeaderStats();
+    }
 }
 
 /**
@@ -597,6 +856,7 @@ function toggleReview() {
     
     updateQuestionPalette();
     updateControlButtons();
+    updateHeaderStats();
 }
 
 /**
@@ -910,7 +1170,7 @@ function showErrorState(message) {
 }
 
 /**
- * Adds dynamic styles for the instructions modal
+ * Adds dynamic styles for the enhanced exam interface
  */
 function addModalStyles() {
     if (document.getElementById('modalStyles')) return;
@@ -918,6 +1178,7 @@ function addModalStyles() {
     const styles = document.createElement('style');
     styles.id = 'modalStyles';
     styles.textContent = `
+        /* Modal Styles */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -944,14 +1205,8 @@ function addModalStyles() {
         }
         
         @keyframes modalSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .modal-header {
@@ -980,9 +1235,7 @@ function addModalStyles() {
             transition: background 0.3s;
         }
         
-        .modal-close-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .modal-close-btn:hover { background: rgba(255, 255, 255, 0.1); }
         
         .modal-content {
             padding: 30px;
@@ -996,7 +1249,673 @@ function addModalStyles() {
             border-top: 1px solid #e9ecef;
             text-align: center;
         }
+
+        /* Enhanced Exam Interface Styles */
+        .exam-interface {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
         
+        .exam-header-bar {
+            background: white;
+            border-bottom: 3px solid var(--primary-color, #2c3e50);
+            padding: 20px 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .exam-header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .exam-title-small {
+            margin: 0;
+            font-size: 1.4em;
+            color: var(--primary-color, #2c3e50);
+            font-weight: 700;
+        }
+
+        .exam-progress {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .progress-text {
+            background: var(--attempted-color, #2ecc71);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .review-count {
+            background: var(--review-color, #f39c12);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .timer-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .timer {
+            background: linear-gradient(135deg, var(--primary-color, #2c3e50) 0%, #34495e 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.4em;
+            font-weight: bold;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .timer.warning {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            animation: timerPulse 1s infinite;
+        }
+        
+        @keyframes timerPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 8px rgba(220,53,69,0.3); }
+            50% { transform: scale(1.05); box-shadow: 0 6px 16px rgba(220,53,69,0.5); }
+        }
+        
+        .exam-body {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            gap: 24px;
+            padding: 24px;
+            overflow: hidden;
+        }
+        
+        /* Enhanced Question Palette */
+        .question-palette {
+            width: 350px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .palette-header {
+            background: linear-gradient(135deg, var(--primary-color, #2c3e50) 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+        }
+
+        .palette-header h3 {
+            margin: 0 0 15px 0;
+            font-size: 1.2em;
+            font-weight: 700;
+        }
+
+        .palette-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            flex: 1;
+        }
+
+        .stat-count {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85em;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .legend-color.attempted { background: var(--attempted-color, #2ecc71); }
+        .legend-color.unattempted { background: var(--unattempted-color, #e74c3c); }
+        .legend-color.review { background: var(--review-color, #f39c12); }
+        .legend-color.current { background: var(--primary-color, #2c3e50); }
+
+        .palette-sections {
+            padding: 20px;
+            max-height: calc(100vh - 280px);
+            overflow-y: auto;
+        }
+
+        .palette-section {
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e9ecef;
+            transition: background 0.2s;
+        }
+
+        .section-header:hover {
+            background: #e9ecef;
+        }
+
+        .section-name {
+            font-weight: 600;
+            color: var(--primary-color, #2c3e50);
+            margin: 0;
+            font-size: 1em;
+        }
+
+        .section-info {
+            display: flex;
+            gap: 15px;
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .section-toggle {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--primary-color, #2c3e50);
+            transition: transform 0.2s;
+        }
+
+        .section-content {
+            padding: 15px 20px;
+        }
+
+        .category-group {
+            margin-bottom: 15px;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: rgba(var(--primary-color), 0.1);
+            border-radius: 6px;
+        }
+
+        .category-label {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: var(--primary-color, #2c3e50);
+        }
+
+        .category-marks {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+        }
+        
+        .palette-item {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .palette-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .palette-item.current {
+            border-color: var(--primary-color, #2c3e50);
+            border-width: 3px;
+            box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.2);
+            transform: scale(1.1);
+        }
+        
+        .palette-item.attempted {
+            background: var(--attempted-color, #2ecc71);
+            color: white;
+            border-color: var(--attempted-color, #2ecc71);
+        }
+        
+        .palette-item.unattempted {
+            background: var(--unattempted-color, #e74c3c);
+            color: white;
+            border-color: var(--unattempted-color, #e74c3c);
+        }
+        
+        .palette-item.review {
+            background: var(--review-color, #f39c12);
+            color: white;
+            border-color: var(--review-color, #f39c12);
+        }
+
+        .palette-item.review::after {
+            content: "🔖";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.7em;
+            background: white;
+            border-radius: 50%;
+            padding: 2px;
+        }
+        
+        /* Enhanced Question Panel */
+        .question-panel {
+            flex: 1;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .question-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .question-header {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .question-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .meta-primary, .meta-secondary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .question-meta span {
+            background: #f8f9fa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 500;
+            border: 1px solid #e9ecef;
+        }
+        
+        .question-number {
+            background: var(--primary-color, #2c3e50) !important;
+            color: white !important;
+            font-weight: 700 !important;
+        }
+
+        .question-section {
+            background: var(--primary-color, #2c3e50) !important;
+            color: white !important;
+        }
+
+        .question-category {
+            background: #17a2b8 !important;
+            color: white !important;
+        }
+
+        .question-marks {
+            background: var(--attempted-color, #2ecc71) !important;
+            color: white !important;
+        }
+
+        .negative-marks {
+            background: var(--unattempted-color, #e74c3c) !important;
+            color: white !important;
+        }
+        
+        .question-text {
+            font-size: 1.15em;
+            line-height: 1.7;
+            margin-bottom: 30px;
+            color: #333;
+            font-weight: 400;
+        }
+        
+        .options-container {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .option-label {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            position: relative;
+        }
+        
+        .option-label:hover {
+            border-color: var(--primary-color, #2c3e50);
+            background: white;
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .option-label.selected {
+            border-color: var(--primary-color, #2c3e50);
+            background: rgba(var(--primary-color), 0.05);
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+        }
+
+        .option-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 60px;
+        }
+        
+        .option-label input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            accent-color: var(--primary-color, #2c3e50);
+        }
+
+        .option-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--primary-color, #2c3e50);
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+
+        .option-label.selected .option-marker {
+            background: var(--attempted-color, #2ecc71);
+            animation: optionSelect 0.3s ease;
+        }
+
+        @keyframes optionSelect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        .option-text {
+            flex: 1;
+            line-height: 1.6;
+            font-size: 1em;
+        }
+        
+        /* Enhanced Question Controls */
+        .question-controls {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px 30px;
+            border-top: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .nav-controls, .action-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        
+        .question-controls button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color, #2c3e50) 0%, #34495e 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-color, #2c3e50);
+            border: 2px solid var(--primary-color, #2c3e50) !important;
+        }
+        
+        .btn-outline.marked {
+            background: var(--review-color, #f39c12);
+            color: white;
+            border-color: var(--review-color, #f39c12) !important;
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+        
+        .question-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .question-controls button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2) !important;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            box-shadow: 0 8px 20px rgba(44, 62, 80, 0.4) !important;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.4) !important;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+            background: var(--primary-color, #2c3e50);
+            color: white;
+        }
+
+        .btn-outline.marked:hover:not(:disabled) {
+            background: #e67e22;
+            border-color: #e67e22 !important;
+        }
+        
+        /* Submission States */
+        .submission-container,
+        .submission-success {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .submission-content,
+        .success-content {
+            text-align: center;
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            max-width: 500px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+        }
+        
+        .loading-spinner.large {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 20px;
+            border: 4px solid #e3e3e3;
+            border-top: 4px solid var(--primary-color, #2c3e50);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .submission-title,
+        .success-title {
+            color: var(--primary-color, #2c3e50);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .submission-text,
+        .success-text {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .success-subtext {
+            color: #888;
+            font-size: 0.9em;
+            margin-bottom: 30px;
+        }
+        
+        .submission-progress {
+            margin-top: 20px;
+        }
+        
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 8px;
+        }
+        
+        .progress-fill {
+            background: var(--primary-color, #2c3e50);
+            height: 100%;
+            width: 0%;
+            animation: progressFill 2s ease-out forwards;
+        }
+        
+        @keyframes progressFill {
+            to { width: 100%; }
+        }
+        
+        .success-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            animation: successBounce 0.6s ease-out;
+        }
+
+        @keyframes successBounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-20px); }
+            60% { transform: translateY(-10px); }
+        }
+        
+        .success-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Instructions Content Styles */
         .instructions-content {
             line-height: 1.6;
         }
@@ -1126,411 +2045,35 @@ function addModalStyles() {
             color: #495057;
         }
         
-        /* Exam Interface Styles */
-        .exam-interface {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            background: #f8f9fa;
-        }
-        
-        .exam-header-bar {
-            background: white;
-            border-bottom: 2px solid var(--primary-color, #2c3e50);
-            padding: 15px 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .exam-header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .exam-title-small {
-            margin: 0;
-            font-size: 1.2em;
-            color: var(--primary-color, #2c3e50);
-        }
-        
-        .timer-container {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .timer-label {
-            font-weight: 500;
-            color: #666;
-        }
-        
-        .timer {
-            background: var(--primary-color, #2c3e50);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        
-        .timer.warning {
-            background: #dc3545;
-            animation: timerBlink 1s infinite;
-        }
-        
-        @keyframes timerBlink {
-            0%, 50% { opacity: 1; }
-            51%, 100% { opacity: 0.7; }
-        }
-        
-        .exam-body {
-            flex: 1;
-            display: flex;
-            max-width: 1400px;
-            margin: 0 auto;
-            width: 100%;
-            gap: 20px;
-            padding: 20px;
-            overflow: hidden;
-        }
-        
-        .question-palette {
-            width: 300px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 20px;
-            overflow-y: auto;
-        }
-        
-        .palette-header h3 {
-            margin: 0 0 15px 0;
-            color: var(--primary-color, #2c3e50);
-        }
-        
-        .legend {
-            margin-bottom: 20px;
-        }
-        
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-            font-size: 0.9em;
-        }
-        
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-            border: 1px solid #ddd;
-        }
-        
-        .legend-color.attempted {
-            background: var(--attempted-color, #2ecc71);
-        }
-        
-        .legend-color.unattempted {
-            background: var(--unattempted-color, #e74c3c);
-        }
-        
-        .legend-color.review {
-            background: var(--review-color, #f39c12);
-        }
-        
-        .palette-grid {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 8px;
-        }
-        
-        .palette-item {
-            width: 40px;
-            height: 40px;
-            border: 2px solid #ddd;
-            background: white;
-            cursor: pointer;
-            border-radius: 4px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-        
-        .palette-item:hover {
-            transform: scale(1.05);
-        }
-        
-        .palette-item.current {
-            border-color: var(--primary-color, #2c3e50);
-            border-width: 3px;
-            box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.2);
-        }
-        
-        .palette-item.attempted {
-            background: var(--attempted-color, #2ecc71);
-            color: white;
-            border-color: var(--attempted-color, #2ecc71);
-        }
-        
-        .palette-item.unattempted {
-            background: var(--unattempted-color, #e74c3c);
-            color: white;
-            border-color: var(--unattempted-color, #e74c3c);
-        }
-        
-        .palette-item.review {
-            background: var(--review-color, #f39c12);
-            color: white;
-            border-color: var(--review-color, #f39c12);
-        }
-        
-        .question-panel {
-            flex: 1;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-        
-        .question-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-        
-        .question-header {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #eee;
-        }
-        
-        .question-meta {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            font-size: 0.9em;
-            color: #666;
-        }
-        
-        .question-meta span {
-            background: #f8f9fa;
-            padding: 4px 8px;
-            border-radius: 4px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .question-number {
-            background: var(--primary-color, #2c3e50) !important;
-            color: white !important;
-            font-weight: 600;
-        }
-        
-        .question-text {
-            font-size: 1.1em;
-            line-height: 1.6;
-            margin-bottom: 25px;
-            color: #333;
-        }
-        
-        .options-container {
-            display: grid;
-            gap: 12px;
-        }
-        
-        .option-label {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 15px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #fafafa;
-        }
-        
-        .option-label:hover {
-            border-color: var(--primary-color, #2c3e50);
-            background: white;
-        }
-        
-        .option-label input[type="radio"] {
-            width: 18px;
-            height: 18px;
-            margin: 0;
-        }
-        
-        .option-text {
-            flex: 1;
-            line-height: 1.5;
-        }
-        
-        .question-controls {
-            background: #f8f9fa;
-            padding: 20px 30px;
-            border-top: 1px solid #e9ecef;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .question-controls .btn-primary,
-        .question-controls .btn-secondary,
-        .question-controls .btn-outline {
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .question-controls .btn-primary {
-            background: var(--primary-color, #2c3e50);
-            color: white;
-        }
-        
-        .question-controls .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .question-controls .btn-outline {
-            background: transparent;
-            color: var(--primary-color, #2c3e50);
-            border: 2px solid var(--primary-color, #2c3e50);
-        }
-        
-        .question-controls .btn-outline.marked {
-            background: var(--review-color, #f39c12);
-            color: white;
-            border-color: var(--review-color, #f39c12);
-        }
-        
-        .question-controls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .question-controls button:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .submit-btn {
-            margin-left: auto;
-        }
-        
-        /* Submission States */
-        .submission-container,
-        .submission-success {
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        }
-        
-        .submission-content,
-        .success-content {
-            text-align: center;
-            background: white;
-            padding: 50px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            max-width: 500px;
-            width: 90%;
-        }
-        
-        .loading-spinner.large {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 20px;
-        }
-        
-        .submission-title,
-        .success-title {
-            color: var(--primary-color, #2c3e50);
-            margin-bottom: 15px;
-        }
-        
-        .submission-text,
-        .success-text {
-            color: #666;
-            margin-bottom: 25px;
-            line-height: 1.5;
-        }
-        
-        .success-subtext {
-            color: #888;
-            font-size: 0.9em;
-            margin-bottom: 30px;
-        }
-        
-        .submission-progress {
-            margin-top: 20px;
-        }
-        
-        .progress-bar {
-            background: #e9ecef;
-            border-radius: 10px;
-            overflow: hidden;
-            height: 8px;
-        }
-        
-        .progress-fill {
-            background: var(--primary-color, #2c3e50);
-            height: 100%;
-            width: 0%;
-            animation: progressFill 2s ease-out forwards;
-        }
-        
-        @keyframes progressFill {
-            to { width: 100%; }
-        }
-        
-        .success-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
-        }
-        
-        .success-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .exam-header-content {
                 flex-direction: column;
-                gap: 10px;
+                gap: 15px;
                 text-align: center;
+            }
+
+            .header-left {
+                align-items: center;
+            }
+
+            .exam-progress {
+                justify-content: center;
             }
             
             .exam-body {
                 flex-direction: column;
-                padding: 10px;
-                gap: 15px;
+                padding: 15px;
+                gap: 20px;
             }
             
             .question-palette {
                 width: 100%;
                 order: 2;
+            }
+
+            .palette-sections {
+                max-height: 300px;
             }
             
             .palette-grid {
@@ -1540,7 +2083,7 @@ function addModalStyles() {
             .palette-item {
                 width: 35px;
                 height: 35px;
-                font-size: 0.9em;
+                font-size: 0.8em;
             }
             
             .question-panel {
@@ -1554,18 +2097,18 @@ function addModalStyles() {
             .question-controls {
                 padding: 15px 20px;
                 flex-direction: column;
-                gap: 10px;
+                gap: 15px;
             }
-            
-            .question-controls > div {
-                display: flex;
-                gap: 10px;
+
+            .nav-controls, .action-controls {
                 width: 100%;
+                justify-content: center;
             }
             
             .question-controls button {
                 flex: 1;
                 justify-content: center;
+                min-width: 120px;
             }
             
             .modal-container {
@@ -1592,6 +2135,135 @@ function addModalStyles() {
             .success-content {
                 padding: 30px 20px;
             }
+
+            .timer {
+                font-size: 1.2em;
+                padding: 10px 16px;
+            }
+
+            .section-info {
+                font-size: 0.9em;
+            }
+
+            .question-meta span {
+                font-size: 0.8em;
+                padding: 4px 8px;
+            }
+
+            .option-label {
+                padding: 15px;
+            }
+
+            .option-text {
+                font-size: 0.95em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .palette-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .palette-item {
+                width: 32px;
+                height: 32px;
+                font-size: 0.75em;
+            }
+
+            .exam-title-small {
+                font-size: 1.2em;
+            }
+
+            .timer {
+                font-size: 1em;
+                padding: 8px 12px;
+            }
+
+            .question-content {
+                padding: 15px;
+            }
+
+            .option-label {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .option-selector {
+                min-width: 50px;
+            }
+
+            .option-marker {
+                width: 24px;
+                height: 24px;
+                font-size: 0.8em;
+            }
+        }
+
+        /* Loading States */
+        .loading-container,
+        .error-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e3e3e3;
+            border-top: 4px solid var(--primary-color, #2c3e50);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text,
+        .error-message {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+        }
+
+        .error-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .error-title {
+            color: var(--primary-color, #2c3e50);
+            margin-bottom: 15px;
+        }
+
+        /* Scrollbar Styling */
+        .palette-sections::-webkit-scrollbar,
+        .question-content::-webkit-scrollbar,
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .palette-sections::-webkit-scrollbar-track,
+        .question-content::-webkit-scrollbar-track,
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .palette-sections::-webkit-scrollbar-thumb,
+        .question-content::-webkit-scrollbar-thumb,
+        .modal-content::-webkit-scrollbar-thumb {
+            background: var(--primary-color, #2c3e50);
+            border-radius: 3px;
+        }
+
+        .palette-sections::-webkit-scrollbar-thumb:hover,
+        .question-content::-webkit-scrollbar-thumb:hover,
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #34495e;
         }
     `;
     
