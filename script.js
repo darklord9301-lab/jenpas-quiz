@@ -2525,30 +2525,31 @@ function addModalStyles() {
         
         /* Enhanced Controls */
         .question-controls {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 25px 35px;
-            border-top: 1px solid #dee2e6;
+            background: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
+            padding: 28px 40px;
+            border-top: 1px solid #e1e4e8;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 16px;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
         }
         
         .control-group-left,
         .control-group-center,
         .control-group-right {
             display: flex;
-            gap: 12px;
+            gap: 14px;
             align-items: center;
         }
         
         .question-controls .btn-primary,
         .question-controls .btn-secondary,
         .question-controls .btn-outline {
-            padding: 14px 24px;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 16px 28px;
+            border-radius: 10px;
+            font-weight: 700;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -2556,67 +2557,91 @@ function addModalStyles() {
             border: none;
             cursor: pointer;
             font-size: 0.95em;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .question-controls button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+        
+        .question-controls button:active::before {
+            width: 300px;
+            height: 300px;
         }
         
         .question-controls .btn-primary {
-            background: var(--primary-color, #2c3e50);
+            background: linear-gradient(135deg, var(--primary-color, #2c3e50) 0%, #34495e 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.25);
         }
         
         .question-controls .btn-secondary {
-            background: #6c757d;
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
             color: white;
+            box-shadow: 0 4px 12px rgba(108, 117, 125, 0.25);
         }
         
         .question-controls .btn-outline {
             background: white;
             color: var(--primary-color, #2c3e50);
             border: 2px solid var(--primary-color, #2c3e50);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         
         .question-controls .btn-outline.marked {
-            background: var(--review-color, #f39c12);
+            background: linear-gradient(135deg, var(--review-color, #f39c12) 0%, #e67e22 100%);
             color: white;
             border-color: var(--review-color, #f39c12);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
         }
         
         .question-controls button:disabled {
-            opacity: 0.5;
+            opacity: 0.4;
             cursor: not-allowed;
             transform: none !important;
+            box-shadow: none !important;
         }
         
         .question-controls button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
         }
         
         .question-controls .btn-primary:hover:not(:disabled) {
-            background: #34495e;
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            box-shadow: 0 8px 20px rgba(44, 62, 80, 0.35);
         }
         
         .question-controls .btn-secondary:hover:not(:disabled) {
-            background: #5a6268;
+            background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%);
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.35);
         }
         
         .question-controls .btn-outline:hover:not(:disabled) {
             background: var(--primary-color, #2c3e50);
             color: white;
+            box-shadow: 0 8px 20px rgba(44, 62, 80, 0.3);
         }
         
         .submit-btn {
-            background: #dc3545 !important;
-            animation: submitPulse 2s infinite;
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
         }
         
         .submit-btn:hover:not(:disabled) {
-            background: #c82333 !important;
-        }
-        
-        @keyframes submitPulse {
-            0%, 100% { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            50% { box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3); }
+            background: linear-gradient(135deg, #c82333 0%, #bd2130 100%) !important;
+            box-shadow: 0 8px 20px rgba(220, 53, 69, 0.45) !important;
         }
         
         /* Submission States */
